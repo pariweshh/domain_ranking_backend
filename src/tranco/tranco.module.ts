@@ -1,15 +1,9 @@
-import { HttpModule } from '@nestjs/axios';
 import { Module } from '@nestjs/common';
+import { TrancoService } from './tranco.service';
+import { TrancoController } from './tranco.controller';
 
 @Module({
-  imports: [
-    HttpModule.register({
-      timeout: 30000,
-      maxRedirects: 5,
-    }),
-  ],
   controllers: [TrancoController],
   providers: [TrancoService],
-  exports: [TrancoService],
 })
 export class TrancoModule {}

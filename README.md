@@ -1,98 +1,204 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="120" alt="Nest Logo" /></a>
-</p>
+# Domain Ranking API
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+A NestJS backend API to look up website rankings using the Tranco list.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg" alt="Donate us"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow" alt="Follow us on Twitter"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+## What is Tranco?
 
-## Description
+Tranco is a research-oriented ranking of the top 1 million websites. It combines data from multiple sources to create a more reliable ranking than any single source.
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+## Features
 
-## Project setup
+- 🔍 **Domain Lookup** - Get the rank of any domain
+- 📊 **Top Domains** - Browse the highest-ranked websites
+- 🔎 **Search** - Find domains containing a keyword
+- 🛡️ **Rate Limiting** - Prevents API abuse (20 requests/minute)
+- 📝 **Logging** - Structured logs for debugging
+
+## Quick Start
 
 ```bash
-$ npm install
+# Install dependencies
+npm install
+
+# Start development server (with auto-reload)
+npm run start:dev
+
+# Or start production server
+npm run build
+npm run start:prod
 ```
 
-## Compile and run the project
+Server runs on http://localhost:3000
+
+## API Endpoints
+
+| Method | Endpoint            | Description          | Example                       |
+| ------ | ------------------- | -------------------- | ----------------------------- |
+| GET    | `/api/rank/:domain` | Get rank of a domain | `/api/rank/google.com`        |
+| GET    | `/api/top`          | Get top domains      | `/api/top?limit=10`           |
+| GET    | `/api/search`       | Search domains       | `/api/search?q=goog&limit=10` |
+| GET    | `/api/health`       | Health check         | `/api/health`                 |
+
+## Example Responses
+
+### Get Domain Rank
 
 ```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
+curl http://localhost:3000/api/rank/google.com
 ```
 
-## Run tests
+```json
+{
+  "domain": "google.com",
+  "rank": 1
+}
+```
+
+### Get Top Domains
 
 ```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
+curl "http://localhost:3000/api/top?limit=3"
 ```
 
-## Deployment
+```json
+[
+  { "rank": 1, "domain": "google.com" },
+  { "rank": 2, "domain": "facebook.com" },
+  { "rank": 3, "domain": "microsoft.com" }
+]
+```
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
-
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+### Search Domains
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+curl "http://localhost:3000/api/search?q=goog&limit=3"
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+```json
+[
+  { "rank": 1, "domain": "google.com" },
+  { "rank": 42, "domain": "googleapis.com" },
+  { "rank": 156, "domain": "googlevideo.com" }
+]
+```
 
-## Resources
+## Project Structure
 
-Check out a few resources that may come in handy when working with NestJS:
+```
+domain-ranking-api/
+├── src/
+│   ├── main.ts              # Entry point - starts the server
+│   ├── app.module.ts        # Root module - wires everything together
+│   └── tranco/
+│       ├── tranco.module.ts     # Feature module
+│       ├── tranco.controller.ts # HTTP request handlers
+│       ├── tranco.service.ts    # Business logic
+│       └── tranco.dto.ts        # Data Transfer Objects (validation)
+├── package.json
+├── tsconfig.json
+├── nest-cli.json
+├── .env                     # Environment variables
+└── .gitignore
+```
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+## Architecture
 
-## Support
+```
+HTTP Request
+     │
+     ▼
+┌─────────────────┐
+│   Controller    │  ← Handles HTTP, extracts parameters
+│  (tranco.controller.ts)
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│    Service      │  ← Business logic, data storage
+│  (tranco.service.ts)
+│                 │
+│  ┌───────────┐  │
+│  │   Map     │  │  ← In-memory storage for fast lookups
+│  │ (domains) │  │
+│  └───────────┘  │
+└─────────────────┘
+```
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+## Key NestJS Concepts
 
-## Stay in touch
+### 1. Modules
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+Organize code into feature groups. `AppModule` is the root that imports everything.
+
+### 2. Controllers
+
+Handle HTTP requests using decorators like `@Get()`, `@Param()`, `@Query()`.
+
+### 3. Services
+
+Contain business logic. Marked with `@Injectable()` for dependency injection.
+
+### 4. Dependency Injection
+
+NestJS automatically creates and provides class instances:
+
+```typescript
+constructor(private trancoService: TrancoService) {}
+// NestJS creates TrancoService and passes it here
+```
+
+### 5. Lifecycle Hooks
+
+`onModuleInit()` runs when the module starts - perfect for loading data.
+
+### 6. Guards (Throttler)
+
+Rate limiting to prevent API abuse. Applied globally in `AppModule`.
+
+### 7. DTOs (Data Transfer Objects)
+
+Define and validate incoming data:
+
+```typescript
+class GetTopDomainsDto {
+  @IsInt() // Must be integer
+  @Min(1) // At least 1
+  @Max(100) // At most 100
+  @IsOptional() // Not required
+  limit?: number = 10;
+}
+```
+
+### 8. ValidationPipe
+
+Automatically validates requests against DTOs:
+
+```typescript
+app.useGlobalPipes(
+  new ValidationPipe({
+    whitelist: true, // Strip unknown properties
+    transform: true, // Convert types automatically
+  }),
+);
+```
+
+## Environment Variables
+
+| Variable         | Description             | Default                               |
+| ---------------- | ----------------------- | ------------------------------------- |
+| `PORT`           | Server port             | 3000                                  |
+| `TRANCO_CSV_URL` | Tranco data URL         | https://tranco-list.eu/top-1m.csv.zip |
+| `THROTTLE_LIMIT` | Max requests per window | 20                                    |
+| `THROTTLE_TTL`   | Time window (seconds)   | 60                                    |
+
+## Technologies
+
+- **NestJS** - Node.js framework with TypeScript
+- **Express** - HTTP server (used internally by NestJS)
+- **Axios** - HTTP client for downloading data
+- **csv-parse** - CSV parsing
+- **@nestjs/throttler** - Rate limiting
 
 ## License
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+MIT

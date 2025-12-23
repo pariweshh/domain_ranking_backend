@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
+import { TrancoModule } from './tranco/tranco.module';
 
 @Module({
   imports: [
@@ -24,10 +25,8 @@ import { APP_GUARD } from '@nestjs/core';
       }),
     }),
 
-    // TrancoModule,
-    // HealthModule,
+    TrancoModule,
   ],
-  controllers: [],
   providers: [
     {
       provide: APP_GUARD,

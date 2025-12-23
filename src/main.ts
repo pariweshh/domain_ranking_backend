@@ -1,7 +1,6 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { Logger, ValidationPipe } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
   // logger instance for startu message
@@ -12,20 +11,9 @@ async function bootstrap() {
     logger: ['error', 'warn', 'log', 'debug', 'verbose'],
   });
 
-  // config service to access environment variables
-  const configService = app.get(ConfigService);
-
   app.setGlobalPrefix('api');
 
-  app.enableCors({
-    origin: configService.get<string>('CORS_ORIGIN', '*'),
-    methods: ['GET', 'POST'],
-    credentials: true,
-  });
-
-  app.useGlobalFilters(new HttpExceptionFilter());
-
-  app.useGlobalInterceptors(new LoggingInterceptor());
+  app.enableCors();
 
   app.useGlobalPipes(
     new ValidationPipe({
@@ -38,8 +26,7 @@ async function bootstrap() {
     }),
   );
 
-  const port = configService.get<number>('PORT', 3000);
-
+  const port = process.env.PORT || 3000;
   await app.listen(port);
 
   logger.log(`🚀 Application is running on: http://localhost:${port}/api`);
