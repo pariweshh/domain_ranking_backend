@@ -1,6 +1,16 @@
-import { Controller, Get, Logger, Param, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Logger,
+  Param,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { TrancoService } from './tranco.service';
 import {
+  BulkRankDto,
+  BulkRankResponse,
   DomainRankResponse,
   GetTopDomainsDto,
   HealthResponse,
@@ -40,5 +50,11 @@ export class TrancoController {
       status: 'ok',
       timestamp: new Date().toISOString(),
     };
+  }
+
+  @Post('rank/bulk')
+  getBulkRanks(@Body() body: BulkRankDto): BulkRankResponse {
+    this.logger.log(`Bulk lookup for ${body.domains.length} domains`);
+    return this.trancoService.getBulkRanks(body.domains);
   }
 }

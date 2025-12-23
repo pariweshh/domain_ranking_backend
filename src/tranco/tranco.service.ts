@@ -1,9 +1,14 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { createUnzip } from 'zlib';
-import { DomainRankResponse, RankedDomainResponse } from './tranco.dto';
+import {
+  BulkRankItemResponse,
+  BulkRankResponse,
+  DomainRankResponse,
+  RankedDomainResponse,
+} from './tranco.dto';
 import { parse } from 'csv-parse/sync';
 import axios from 'axios';
+import AdmZip from 'adm-zip';
 
 @Injectable()
 export class TrancoService implements OnModuleInit {
@@ -40,17 +45,29 @@ export class TrancoService implements OnModuleInit {
         timeout: 60000,
       });
 
-      this.logger.log('Download complete, unzipping...');
+      this.logger.log('Download complete, extracting ZIP...');
 
+      /* eslint-disable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return */
       //   unzip
-      const csvBuffer = await this.unzipBuffer(Buffer.from(response.data));
-      const csvContent = csvBuffer.toString('utf-8');
+      const zip = new AdmZip(Buffer.from(response.data));
+      const zipEntries = zip.getEntries();
+
+      const csvEntry = zipEntries.find((entry) =>
+        entry.entryName.endsWith('.csv'),
+      );
+
+      if (!csvEntry) {
+        throw new Error('No CSV file found in ZIP archive');
+      }
+
+      const csvContent = csvEntry.getData().toString('utf-8');
 
       this.logger.log('Parsing CSV...');
 
       const records: string[][] = parse(csvContent, {
         skip_empty_lines: true,
-      });
+      }) as string[][];
+      /* eslint-enable @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-return */
 
       // Store each record
       for (const [rankStr, domain] of records) {
@@ -62,24 +79,12 @@ export class TrancoService implements OnModuleInit {
       }
 
       this.logger.log('Tranco data loaded successfully!');
-    } catch (error: any) {
-      this.logger.error(`Failed to load Tranco data: ${error.message}`);
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Failed to load Tranco data: ${errorMessage}`);
       throw error;
     }
-  }
-
-  private unzipBuffer(buffer: Buffer): Promise<Buffer> {
-    return new Promise((resolve, reject) => {
-      const chunks: Buffer[] = [];
-      const unzip = createUnzip();
-
-      unzip.on('data', (chunk) => chunks.push(chunk));
-      unzip.on('end', () => resolve(Buffer.concat(chunks)));
-      unzip.on('error', reject);
-
-      unzip.write(buffer);
-      unzip.end();
-    });
   }
 
   //   Get single domain rank
@@ -97,7 +102,6 @@ export class TrancoService implements OnModuleInit {
   }
 
   //   get top domains
-
   getTopDomains(limit: number = 10): RankedDomainResponse[] {
     // cap limit to prevent large responses
     const safeLimit = Math.min(Math.max(1, limit), 100);
@@ -108,9 +112,7 @@ export class TrancoService implements OnModuleInit {
       domain,
     }));
   }
-
   //   search domains
-
   searchDomains(query: string, limit: number = 10): RankedDomainResponse[] {
     const normalised = query.toLowerCase().trim();
     const safeLimit = Math.min(Math.max(1, limit), 100);
@@ -133,5 +135,39 @@ export class TrancoService implements OnModuleInit {
       }
     }
     return results;
+  }
+
+  private getTier(rank: number | null): string {
+    if (rank === null) return 'Unranked';
+    if (rank <= 100) return 'Elite';
+    if (rank <= 1000) return 'Premium (Top 1k)';
+    if (rank <= 10000) return 'Popular (Top 10k)';
+    if (rank <= 100000) return 'Notable (Top 100k)';
+    return 'Ranked';
+  }
+
+  getBulkRanks(domains: string[]): BulkRankResponse {
+    const results: BulkRankItemResponse[] = domains.map((domain) => {
+      const normalised = domain.toLowerCase().trim();
+      const rank = this.domainToRank.get(normalised) ?? null;
+
+      return {
+        domain: normalised,
+        rank,
+        found: rank !== null,
+        tier: this.getTier(rank),
+      };
+    });
+
+    const found = results.filter((r) => r.found).length;
+
+    return {
+      results,
+      summary: {
+        total: results.length,
+        found,
+        notFound: results.length - found,
+      },
+    };
   }
 }
